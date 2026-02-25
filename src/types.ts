@@ -2,6 +2,17 @@ import { User, Mail, Briefcase, Calendar, CheckCircle2, Clock, ChevronRight, Plu
 
 export type Stage = 'Applied' | 'Screening' | 'Technical' | 'Culture' | 'Job Offer';
 
+export type UserRole = 'HR' | 'COMPANY';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  company?: string;
+  avatar: string;
+}
+
 export interface Candidate {
   id: string;
   name: string;

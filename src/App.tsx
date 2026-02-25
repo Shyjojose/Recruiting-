@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Search, LayoutGrid, List, Sparkles, Users, TrendingUp, CheckCircle2, Building2, ChevronDown, ChevronRight } from 'lucide-react';
-import { Candidate, INITIAL_CANDIDATES, STAGES, Stage } from './types';
+import { Plus, Search, LayoutGrid, List, Sparkles, Users, TrendingUp, CheckCircle2, Building2, ChevronDown, ChevronRight, LogOut, User as UserIcon } from 'lucide-react';
+import { Candidate, INITIAL_CANDIDATES, STAGES, Stage, UserProfile } from './types';
 import { CandidateCard } from './components/CandidateCard';
 import { AddCandidateModal } from './components/AddCandidateModal';
+import { Login } from './components/Login';
 
 export default function App() {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>(INITIAL_CANDIDATES);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,12 +15,19 @@ export default function App() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const filteredCandidates = useMemo(() => {
-    return candidates.filter(c => 
+    let list = candidates;
+    
+    // Filter by company if user is a company rep
+    if (user?.role === 'COMPANY' && user.company) {
+      list = list.filter(c => c.company.toLowerCase() === user.company?.toLowerCase());
+    }
+
+    return list.filter(c => 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.company.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [candidates, searchQuery]);
+  }, [candidates, searchQuery, user]);
 
   const groupedCandidates = useMemo(() => {
     const groups: Record<string, Record<string, Candidate[]>> = {};
@@ -51,14 +60,18 @@ export default function App() {
   };
 
   const stats = useMemo(() => ({
-    total: candidates.length,
-    offers: candidates.filter(c => c.stage === 'Job Offer').length,
-    active: candidates.filter(c => c.stage !== 'Job Offer').length,
-  }), [candidates]);
+    total: filteredCandidates.length,
+    offers: filteredCandidates.filter(c => c.stage === 'Job Offer').length,
+    active: filteredCandidates.filter(c => c.stage !== 'Job Offer').length,
+  }), [filteredCandidates]);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  if (!user) {
+    return <Login onLogin={setUser} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -70,7 +83,12 @@ export default function App() {
               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                 <Sparkles size={24} />
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">HireJoy</h1>
+              <div className="flex flex-col -space-y-1">
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">HireJoy</h1>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                  {user.role === 'HR' ? 'HR Portal' : user.company}
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -78,21 +96,48 @@ export default function App() {
                 <Search size={18} className="text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search candidates, roles, companies..."
+                  placeholder="Search candidates..."
                   className="bg-transparent border-none outline-none text-sm w-48 lg:w-64"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsModalOpen(true)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
-              >
-                <Plus size={20} />
-                <span className="hidden sm:inline">Add Candidate</span>
-              </motion.button>
+              
+              {user.role === 'HR' && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                >
+                  <Plus size={20} />
+                  <span className="hidden sm:inline">Add Candidate</span>
+                </motion.button>
+              )}
+
+              <div className="h-8 w-px bg-slate-200 mx-2" />
+
+              <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
+                <div className="hidden sm:block text-right">
+                  <p className="text-xs font-bold text-slate-900">{user.name}</p>
+                  <p className="text-[10px] text-slate-500">{user.role === 'HR' ? 'Administrator' : 'Hiring Manager'}</p>
+                </div>
+                <img 
+                  src={user.avatar} 
+                  alt={user.name} 
+                  className="w-10 h-10 rounded-xl border-2 border-white shadow-sm object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setUser(null)}
+                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                  title="Sign Out"
+                >
+                  <LogOut size={20} />
+                </motion.button>
+              </div>
             </div>
           </div>
         </div>
@@ -102,7 +147,7 @@ export default function App() {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'Total Candidates', value: stats.total, icon: Users, color: 'blue' },
+            { label: user.role === 'HR' ? 'Total Candidates' : 'My Candidates', value: stats.total, icon: Users, color: 'blue' },
             { label: 'Active Pipeline', value: stats.active, icon: TrendingUp, color: 'indigo' },
             { label: 'Job Offers', value: stats.offers, icon: CheckCircle2, color: 'emerald' },
           ].map((stat, i) => (
@@ -127,7 +172,7 @@ export default function App() {
         {/* View Controls */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            Recruitment Pipeline
+            {user.role === 'HR' ? 'Recruitment Pipeline' : `${user.company} Pipeline`}
             <span className="text-xs font-medium bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
               {filteredCandidates.length}
             </span>
@@ -172,7 +217,7 @@ export default function App() {
                 <div className="grid grid-cols-1 gap-6">
                   {Object.entries(roles).map(([role, roleCandidates]) => {
                     const sectionKey = `${company}-${role}`;
-                    const isExpanded = expandedSections[sectionKey] !== false; // Default expanded
+                    const isExpanded = expandedSections[sectionKey] !== false;
 
                     return (
                       <div key={role} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
