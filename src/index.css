@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+.glass {
+  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm;
+}
+
+.stage-gradient-1 { @apply bg-blue-50 text-blue-700 border-blue-100; }
+.stage-gradient-2 { @apply bg-purple-50 text-purple-700 border-purple-100; }
+.stage-gradient-3 { @apply bg-amber-50 text-amber-700 border-amber-100; }
+.stage-gradient-4 { @apply bg-rose-50 text-rose-700 border-rose-100; }
+.stage-gradient-5 { @apply bg-emerald-50 text-emerald-700 border-emerald-100; }
